@@ -1,5 +1,6 @@
 use std::{env, io};
 mod lookup;
+use std::str::FromStr;
 
 const HELP_MESSAGE: &'static str = "You summoned me summoner!
 Taric is a commnd-line application to lookup League of Legends stats.
