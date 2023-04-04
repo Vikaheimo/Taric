@@ -1,7 +1,11 @@
+use std::path::PathBuf;
 use std::{env, io};
 mod lookup;
+mod config;
 use std::str::FromStr;
 
+
+const DEFAULT_CONFIG_FILENAME: &'static str = ".taric.cfg";
 const HELP_MESSAGE: &'static str = "You summoned me summoner!
 Taric is a commnd-line application to lookup League of Legends stats.
 
@@ -19,16 +23,32 @@ taric SUMMONERWITHSPACES EUW
 could lookup SUMMONER WITH SPACES on the EUW server.
 If you don't specify any arguments the program will be run in interactive mode,
 which uses the same logic to get your input.";
+const CONFIG_SETUP_MESSAGE: &'static str = "No config file found on the home folder!
+Taric stores it's riot-api token in your home folder in a file called \".taric.cfg\".
+To setup a new token, go to https://developer.riotgames.com/ and login with your Riot account.
+From there you can get your account token.";
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-
+    let mut config_file = home::home_dir().unwrap();
+    config_file.push(DEFAULT_CONFIG_FILENAME);
+    let config = match config::Config::from_file(&config_file) {
+        Ok(data) => data,
+        Err(err) => {println!("{}",err);create_config_advisor(&config_file); return;},
+    };
+    
     match args.len() {
         1 => interactive_mode(),
+        2 if args[1] == "--setup" => config::Config::setup_config(&config_file),
         2 => print_help_message(),
         _ => single_mode(&args[1..=2]),
     }
     println!("{:?}", args);
+}
+
+fn create_config_advisor(config_file: &PathBuf){
+    println!("{}", CONFIG_SETUP_MESSAGE);
+    config::Config::setup_config(config_file)
 }
 
 fn single_mode(values: &[String]) {
@@ -70,7 +90,7 @@ fn print_help_message() {
     println!("{}", HELP_MESSAGE)
 }
 
-fn trim_newline(string: &mut String) {
+pub fn trim_newline(string: &mut String) {
     if string.ends_with('\n') {
         string.pop();
         if string.ends_with('\r') {
